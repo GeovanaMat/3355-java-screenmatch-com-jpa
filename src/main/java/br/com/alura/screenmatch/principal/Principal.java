@@ -87,4 +87,7 @@ public class Principal {
         }
         temporadas.forEach(System.out::println);
     }
+
+
+
 }
