@@ -1,17 +1,32 @@
 package br.com.alura.screenmatch.model;
 
 import br.com.alura.screenmatch.service.ConsumoMyMemory;
+import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.OptionalDouble;
 
+@Entity
+@Table(name = "series")
 public class Serie {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(unique = true)
     private String titulo;
     private Integer totalTemporadas;
     private Double avaliacao;
     private String atores;
     private String sinopse;
     private String poster;
+    @Enumerated(EnumType.STRING)
     private Categoria genero;
+
+    @Transient
+    private List<Episodio> episodios = new ArrayList<>();
+
+    public  Serie() {}
 
     public Serie(DadosSerie dadosSerie) {
         this.atores  = dadosSerie.atores();
@@ -19,9 +34,17 @@ public class Serie {
         this.totalTemporadas = dadosSerie.totalTemporadas();
         this.avaliacao = OptionalDouble.of(Double.parseDouble(dadosSerie.avaliacao())).orElse(0);
         this.poster = dadosSerie.poster();
-        this.sinopse = ConsumoMyMemory.obterTraducao(dadosSerie.sinopse()).trim();
+        this.sinopse = ConsumoMyMemory.obterTraducao(dadosSerie.sinopse());
         this.genero = Categoria.fromString(dadosSerie.genero().split(",")[0].trim());
 
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getTitulo() {
@@ -80,6 +103,8 @@ public class Serie {
         this.genero = genero;
     }
 
+
+
     @Override
     public String toString() {
         return  "genero=" + genero + "\"" +
@@ -90,5 +115,13 @@ public class Serie {
                 ", sinopse='" + sinopse + '\'' +
                 ", poster='" + poster + '\'';
 
+    }
+
+    public List<Episodio> getEpisodios() {
+        return episodios;
+    }
+
+    public void setEpisodios(List<Episodio> episodios) {
+        this.episodios = episodios;
     }
 }
