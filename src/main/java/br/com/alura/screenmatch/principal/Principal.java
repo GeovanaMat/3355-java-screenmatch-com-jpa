@@ -7,6 +7,7 @@ import br.com.alura.screenmatch.model.Serie;
 import br.com.alura.screenmatch.repository.SerieRepository;
 import br.com.alura.screenmatch.service.ConsumoApi;
 import br.com.alura.screenmatch.service.ConverteDados;
+import jakarta.persistence.Transient;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,6 +21,10 @@ public class Principal {
     private final String API_KEY = "&apikey=6585022c";
     private List<DadosSerie> dadosSeries = new ArrayList<>();
     private SerieRepository serieRepository;
+
+    @Transient
+    List<Serie> series;
+
 
     public Principal(SerieRepository serieRepository) {
         this.serieRepository = serieRepository;
@@ -61,7 +66,7 @@ public class Principal {
     }
 
     private void  listarSeriesBuscadas() {
-        List<Serie> series = serieRepository.findAll();
+        series = serieRepository.findAll();
         series.stream().
                 sorted(Comparator.comparing(Serie::getTitulo))
                 .forEach(System.out::println);
@@ -87,15 +92,45 @@ public class Principal {
     }
 
     private void buscarEpisodioPorSerie(){
-        DadosSerie dadosSerie = getDadosSerie();
-        List<DadosTemporada> temporadas = new ArrayList<>();
 
-        for (int i = 1; i <= dadosSerie.totalTemporadas(); i++) {
-            var json = consumo.obterDados(ENDERECO + dadosSerie.titulo().replace(" ", "+") + "&season=" + i + API_KEY);
-            DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
-            temporadas.add(dadosTemporada);
+        listarSeriesBuscadas();
+
+        System.out.println("Escolha uma séries pelo nome: ");
+        var nomeSerie = leitura.nextLine();
+
+        Optional<Serie> serie =  series.stream()
+                 .filter(s-> s.getTitulo().toLowerCase().contains(nomeSerie.toLowerCase()))
+                 .findFirst();
+
+
+        if(serie.isPresent()) {
+            List<DadosTemporada> temporadas = new ArrayList<>();
+
+            var serieEncontrada = serie.get();
+
+
+            for (int i = 1; i <= serieEncontrada.getTotalTemporadas(); i++) {
+                var json = consumo.obterDados(ENDERECO + serieEncontrada.getTitulo().replace(" ", "+") + "&season=" + i + API_KEY);
+                DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
+                temporadas.add(dadosTemporada);
+            }
+            temporadas.forEach(System.out::println);
+
+             var episodios = temporadas.stream()
+                    .flatMap(d -> d.episodios().stream()
+                            .map(e -> new Episodio(d.numero(), e,serieEncontrada)))
+                    .collect(Collectors.toList());
+
+            serieEncontrada.setEpisodios(episodios);
+            serieRepository.save(serieEncontrada);
+
+            System.out.println(serieEncontrada);
+
+        }else{
+            System.out.println(" A serie escolhida não está no banco de dados");
         }
-        temporadas.forEach(System.out::println);
+
+
     }
 
 
